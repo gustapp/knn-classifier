@@ -2,34 +2,63 @@
 # # K-Nearest Neighbors Classifier for adult dataset
 
 #%%
-# Load Data
+# Import dependencies
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 
 def pre_process_data(data_file_path):
+
+    #%%
+    # Categorical features.
+    categorical_features = ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country']
+
+    #%%
+    # Load data from file
     df = pd.read_csv(data_file_path)
     df.head()
 
+    #%% [markdown]
+    # ## Input missing values
+
     #%%
-    # Import LabelEncoder
-    from sklearn import preprocessing
+    # Count number of missing values `?`
+    df = df.replace(' ?', np.nan)
+    df.isnull()
+
+    #%%
+    # Fill missing values with mode for each column
+    mode = df[categorical_features].mode()
+
+    df[categorical_features] = df[categorical_features].fillna(mode.iloc[0])
+
+    #%%
+    # Check if all missing values were inputed
+    df.isnull() # expected to be `0`
+
+    #%% [markdown]
+    # ## Encode categorical features
+
+    #%%
     #creating labelEncoder
-    le = preprocessing.LabelEncoder()
+    le = LabelEncoder()
+
+    df[categorical_features] = df[categorical_features].apply(le.fit_transform)
+
+    target = le.fit_transform(df.pop('income'))
+
+    features = [tuple(value) for value in df.values]
+    
+    #%% [markdown]
+    # ## Scale the features
+
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    features_scaled = scaler.fit_transform(features)
 
     #%%
-    # Converting string labels into numbers.
-    workclass_encoded=le.fit_transform(df['workclass'])
-    education_encoded=le.fit_transform(df['education'])
-    marital_status_encoded=le.fit_transform(df['marital-status'])
-    occupation_encoded=le.fit_transform(df['occupation'])
-    relationship_encoded=le.fit_transform(df['relationship'])
-    race_encoded=le.fit_transform(df['race'])
-    sex_encoded=le.fit_transform(df['sex'])
-    native_country_encoded=le.fit_transform(df['native-country'])
+    #combinig all features into single listof tuples
+    return (features_scaled, target)
 
-    #%%
-    #combinig weather and temp into single listof tuples
-    return (list(zip(df['age'],workclass_encoded, df['fnlwgt'], education_encoded, df['education-num'], marital_status_encoded, occupation_encoded, relationship_encoded, race_encoded, sex_encoded, df['capital-gain'], df['capital-loss'], df['hours-per-week'], native_country_encoded)), le.fit_transform(df['income']))
 
 
 #%%
@@ -38,18 +67,15 @@ X_train, y_train=pre_process_data('./adult/adult.data')
 
 #%%
 # Create KNN model
+# Import K-Nearest Neighbors classifier from sklearn
 from sklearn.neighbors import KNeighborsClassifier
 
+# @param: n_neighbors `K: hyperparameter`
 model = KNeighborsClassifier(n_neighbors=11)
 
 #%%
 # Train the model using the training sets
 model.fit(X_train, y_train)
-
-#%%
-#Predict Output from training set
-predicted= model.predict([X_train[0]]) # 0:>50K, 1:<=50K
-print(predicted)
 
 #%% [markdown]
 # Evaluation
@@ -57,6 +83,11 @@ print(predicted)
 #%%
 # Load Test Data
 X_test, y_test=pre_process_data('./adult/adult.test')
+
+#%%
+# Predict for one instance
+y_pred = model.predict([X_test[0]])
+print(y_pred) # <=50K: 0 | >50K: 1
 
 #%%
 # Predict for the test dataset
