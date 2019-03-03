@@ -48,7 +48,7 @@ def pre_process_data(data_file_path):
     target = le.fit_transform(df.pop('income'))
 
     features = [tuple(value) for value in df.values]
-    
+
     #%% [markdown]
     # ## Scale the features
 
@@ -71,7 +71,7 @@ X_train, y_train=pre_process_data('./adult/adult.data')
 from sklearn.neighbors import KNeighborsClassifier
 
 # @param: n_neighbors `K: hyperparameter`
-model = KNeighborsClassifier(n_neighbors=11)
+model = KNeighborsClassifier(n_neighbors=2)
 
 #%%
 # Train the model using the training sets
@@ -98,3 +98,44 @@ y_pred = model.predict(X_test)
 from sklearn import metrics
 # Model Accuracy, how often is the classifier correct?
 print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+#%% [markdown]
+# ## Evaluate model for different `K`
+
+#%%
+# Import libraries
+from sklearn import neighbors
+from sklearn.metrics import mean_squared_error, accuracy_score
+from math import sqrt
+import matplotlib.pyplot as plt
+
+#%%
+# Retrive empirical error rates for different k
+rmse_val = []
+accy_val = []
+for K in range(1, 100, 2):
+    model = neighbors.KNeighborsRegressor(n_neighbors = K)
+
+    model.fit(X_train, y_train)  #fit the model
+    y_pred=model.predict(X_test) #make prediction on test set
+    error = sqrt(mean_squared_error(y_test,y_pred)) #calculate rmse
+    rmse_val.append(error) #store rmse values
+
+    model = neighbors.KNeighborsClassifier(n_neighbors = K)
+    model.fit(X_train, y_train)  #fit the model
+    y_pred=model.predict(X_test) #make prediction on test set
+    accuracy = accuracy_score(y_test, y_pred)
+    accy_val.append(accuracy)
+    print("Accuracy:", accuracy_score(y_test, y_pred))
+    
+    print('RMSE value for k= ' , K , 'is:', error, '\n')
+
+#plotting the rmse values against k values
+rmse_curve = pd.DataFrame(rmse_val) #elbow curve 
+rmse_curve.plot()
+rmse_curve.to_csv('./rmse_curve.csv')
+
+#plotting the accuracy values against k values
+accy_curve = pd.DataFrame(accy_val)
+accy_curve.plot()
+accy_curve.to_csv('./accy_curve.csv')
